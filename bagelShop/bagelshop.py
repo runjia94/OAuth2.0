@@ -18,7 +18,7 @@ app = Flask(__name__)
 #ADD @auth.verify_password here
 @auth.verify_password
 def verify_password(username, password):
-    user = session.query(User).filter_by(username).first()
+    user = session.query(User).filter_by(username = username).first()
     if not user:
         print "User not Found"
         return False
@@ -37,13 +37,30 @@ def new_user():
     if username is None or password is None:
         print 'Missing arguments'
         abort(400)
-    if session.query(User).filter_by(username = username).first():
+    if session.query(User).filter_by(username = username).first() is not None:
+        print 'User exists'
+        user = session.query(User).filter_by(username = username).first()
         return jsonify({'message': 'user already exists'}),200
+
     user = User(username = username)
     user.hash_password(password)
     session.add(user)
     session.commit()
     return jsonify({'username': user.username}),201
+
+@app.route('/users/<int:id>')
+def get_user(id):
+    user = session.query(User).filter_by(id = id).one()
+    if not user:
+        abort(404)
+    return jsonify({'username':user.username})
+
+@app.route('/resource')
+@auth.login_required
+def get_resource():
+    return jsonify({'data': 'Hello %s' % g.user.username})
+
+
 
 
 @app.route('/bagels', methods = ['GET','POST'])
